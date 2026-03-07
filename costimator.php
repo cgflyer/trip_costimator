@@ -3,24 +3,65 @@
 // Static aircraft data
 // -------------------------------
 $aircraft = [
-    [
-        "id" => "N12345",
-        "cruise" => 110,
-        "cost_hr" => 145,
-        "fuel_burn" => 9.5,
-        "useful_load" => 850,
-        "max_fuel_gal" => 50
-    ],
-    [
-        "id" => "N54321",
-        "cruise" => 125,
-        "cost_hr" => 165,
-        "fuel_burn" => 10.2,
-        "useful_load" => 900,
-        "max_fuel_gal" => 56
-    ],
-    // Add all 7 aircraft here...
+
+[
+    "id" => "N9497M",
+    "cruise" => 160.765,
+    "cost_hr" => 285,
+    "fuel_burn" => 18,
+    "useful_load" => 1442,
+    "max_fuel_gal" => 89
+],
+[
+    "id" => "N3QZ",
+    "cruise" => 139,
+    "cost_hr" => 190,
+    "fuel_burn" => 13.2,
+    "useful_load" => 1210,
+    "max_fuel_gal" => 78
+],
+[
+    "id" => "N6833C",
+    "cruise" => 116,
+    "cost_hr" => 135,
+    "fuel_burn" => 9,
+    "useful_load" => 1015,
+    "max_fuel_gal" => 48
+],
+[
+    "id" => "N4135W",
+    "cruise" => 116,
+    "cost_hr" => 162,
+    "fuel_burn" => 9,
+    "useful_load" => 734,
+    "max_fuel_gal" => 48
+],
+[
+    "id" => "N733NB",
+    "cruise" => 112,
+    "cost_hr" => 159,
+    "fuel_burn" => 9,
+    "useful_load" => 1067,
+    "max_fuel_gal" => 40
+],
+[
+    "id" => "N737TY",
+    "cruise" => 112,
+    "cost_hr" => 159,
+    "fuel_burn" => 9,
+    "useful_load" => 1010,
+    "max_fuel_gal" => 40
+],
+[
+    "id" => "N121DB",
+    "cruise" => 134.695,
+    "cost_hr" => 175,
+    "fuel_burn" => 9.5,
+    "useful_load" => 1038,
+    "max_fuel_gal" => 48
+]
 ];
+
 ?>
 <!DOCTYPE html>
 <html>
