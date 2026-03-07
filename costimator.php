@@ -74,10 +74,26 @@ $aircraft = [
 -------------------------------- -->
 <script>
     const AIRCRAFT_DATA = <?php echo json_encode($aircraft); ?>;
+
+
 </script>
 
 <!-- Load calculation script -->
-<script src="aircraftCalculator.js"></script>
+<script src="aircraftTripCalculator.js"></script>
+<script>
+    function runEstimator() {
+        const inputs = {
+            distance_nm: Number(document.getElementById("distance").value),
+            pax_weight: Number(document.getElementById("pax").value),
+            expected_fuel_cost: Number(document.getElementById("fuelcost").value),
+            round_trip: document.getElementById("roundtrip").checked
+        };
+
+    trip_cost_estimates = applyEstimator(inputs, aircraft_data = AIRCRAFT_DATA);
+
+    renderResults(trip_cost_estimates, document.getElementById("results"));
+}
+</script>
 
 </body>
 </html>

@@ -37,10 +37,10 @@ function computeAircraftResult(ac, inputs) {
     // 8. Fuel delta (one way)
     const deltaOneWay = fuelOneWay * (expected_fuel_cost - 5.50);
 
-    // 9. Round-trip multipliers
+    // 9. Round-trip multiplier
     const multiplier = round_trip ? 2 : 1;
 
-    // 10. Chargeable legs (all legs except last inbound leg)
+    // 10. Chargeable legs (all except last inbound leg)
     let chargeableLegs;
     if (!round_trip) {
         chargeableLegs = legsOneWay;
@@ -63,4 +63,39 @@ function computeAircraftResult(ac, inputs) {
         legsOneWay,
         chargeableLegs
     };
+}
+
+function applyEstimator(inputs) {
+    const results = AIRCRAFT_DATA.map(ac => computeAircraftResult(ac, inputs));
+    return results;
+}
+
+function renderResults(results, outputElement) {
+    let html = `
+        <table>
+            <tr>
+                <th>Aircraft</th>
+                <th>Total Time (hrs)</th>
+                <th>Total Fuel (gal)</th>
+                <th>Total Cost ($)</th>
+                <th>Fuel Stops</th>
+                <th>Fuel Delta ($)</th>
+            </tr>
+    `;
+
+    results.forEach(r => {
+        html += `
+            <tr>
+                <td>${r.id}</td>
+                <td>${r.time.toFixed(2)}</td>
+                <td>${r.fuel.toFixed(1)}</td>
+                <td>$${r.cost.toFixed(0)}</td>
+                <td>${r.fuelStops}</td>
+                <td>$${r.fuelDelta.toFixed(0)}</td>
+            </tr>
+        `;
+    });
+
+    html += "</table>";
+    outputElement.innerHTML = html;
 }
