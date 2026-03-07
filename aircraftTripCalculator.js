@@ -1,0 +1,66 @@
+function computeAircraftResult(ac, inputs) {
+    const {
+        distance_nm,
+        pax_weight,
+        expected_fuel_cost,
+        round_trip
+    } = inputs;
+
+    const cruise = ac.cruise;
+    const costHr = ac.cost_hr;
+    const gph = ac.fuel_burn;
+    const useful = ac.useful_load;
+    const maxFuelGal = ac.max_fuel_gal;
+
+    // 1. Flight time (one way)
+    const timeOneWay = distance_nm / cruise;
+
+    // 2. Max usable fuel (gal)
+    const maxFuelByWeight = (useful - pax_weight) / 6;
+    const maxUsableFuel = Math.min(maxFuelGal, maxFuelByWeight);
+
+    // 3. Endurance (hrs)
+    const endurance = maxUsableFuel / gph;
+
+    // 4. Endurance minus 1 hr reserve
+    const usableEndurance = endurance - 1;
+
+    // 5. One-way legs (fuel stops + 1)
+    const legsOneWay = usableEndurance <= 0 ? Infinity : Math.ceil(timeOneWay / usableEndurance);
+
+    // 6. Fuel burn (one way)
+    const fuelOneWay = timeOneWay * gph;
+
+    // 7. Hobbs cost (one way)
+    const costOneWay = timeOneWay * costHr;
+
+    // 8. Fuel delta (one way)
+    const deltaOneWay = fuelOneWay * (expected_fuel_cost - 5.50);
+
+    // 9. Round-trip multipliers
+    const multiplier = round_trip ? 2 : 1;
+
+    // 10. Chargeable legs (all legs except last inbound leg)
+    let chargeableLegs;
+    if (!round_trip) {
+        chargeableLegs = legsOneWay;
+    } else {
+        const totalLegs = legsOneWay * 2;
+        chargeableLegs = totalLegs - 1;
+    }
+
+    // 11. Total delta
+    const totalDelta = deltaOneWay * chargeableLegs;
+
+    return {
+        id: ac.id,
+        time: timeOneWay * multiplier,
+        fuel: fuelOneWay * multiplier,
+        cost: costOneWay * multiplier,
+        fuelStops: legsOneWay * multiplier,
+        fuelDelta: totalDelta,
+        maxUsableFuel,
+        legsOneWay,
+        chargeableLegs
+    };
+}
