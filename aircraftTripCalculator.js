@@ -194,7 +194,6 @@ function applyColorMap(tableId) {
 
 // Example function to compute daily minimums based on reservation dates
 function computeDailyMinimums(startDate, endDate) {
-    const dailyMinHours = 2; // default daily minimum hours
     const start = new Date(startDate);
     const end = new Date(endDate);
 
@@ -202,10 +201,31 @@ function computeDailyMinimums(startDate, endDate) {
     let d = new Date(start);
 
     while (d <= end) {
+        const dayOfWeek = d.getDay(); // 0=Sun, 1=Mon, ... 6=Sat
+        const month = d.getMonth();   // 0=Jan, 4=May, 7=Aug
+        const day = d.getDate();
+
+        // Weekend = Fri (5), Sat (6), Sun (0)
+        const isWeekend = (dayOfWeek === 5 || dayOfWeek === 6 || dayOfWeek === 0);
+
+        // Original flexible summer definition: May 1 – Aug 31
+        const isSummer =
+            (month > 4 && month < 7) ||
+            (month === 4 && day >= 1) ||
+            (month === 7 && day <= 31);
+
+        let hours;
+        if (isWeekend) {
+            hours = 2.0;
+        } else {
+            hours = isSummer ? 1.5 : 1.0;
+        }
+
         days.push({
             date: new Date(d),
-            hours: dailyMinHours
+            hours
         });
+
         d.setDate(d.getDate() + 1);
     }
 
