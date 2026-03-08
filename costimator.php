@@ -109,6 +109,12 @@ $aircraft = [
             background: #f9f9f9;
             border-radius: 6px;
         }
+        .error-message {
+            color: #b00020;          /* deep red, readable but not harsh */
+            font-size: 0.9rem;
+            margin-top: 6px;
+            font-weight: 500;
+        }
     </style>
 </head>
 
@@ -139,10 +145,6 @@ $aircraft = [
      User Input Form
 -------------------------------- -->
 <div>
-    <label>
-        <input type="checkbox" id="toggleHidden">
-        Show advanced factors
-    </label>
 </div>
 
 <div class="form-grid">
@@ -167,29 +169,57 @@ $aircraft = [
             Round Trip?
             <input id="roundtrip" type="checkbox">
         </label><br><br>
+        <!-- Multi-day reservation toggle -->
+        <label>
+            <input type="checkbox" id="multiDayToggle">
+            Multi-day reservation
+        </label>
+        <label>
+            <input type="checkbox" id="toggleHidden">
+            Show advanced factors
+        </label>
 
         <button onclick="runEstimator()">Compute</button>
 
     </div>
 
-    <!-- RIGHT COLUMN: Hidden factors -->
-    <div id="hiddenPanel" class="hidden-panel">
-        <h3>Advanced Factors</h3>
+    <div>
+        <!-- Hidden multi-day panel -->
+        <div id="multiDayPanel" class="hidden-panel" style="display:none; margin-top:10px;">
+            <h3>Reservation Dates</h3>
 
-        <label>Fuel Reserve (hours)
-            <input type="number" id="fuelReserve" step="0.1">
-        </label><br>
+            <label>Start Date
+                <input type="date" id="reservationStart">
+            </label><br>
 
-        <label>Refuel Stop Time (minutes)
-            <input type="number" id="refuelTime" step="0.1">
-        </label><br>
+            <label>End Date
+                <input type="date" id="reservationEnd">
+            </label><br>
 
-        <label>Reimbursement Fuel Cost ($/gal)
-            <input type="number" id="reimbursementFuelCost" step="0.01">
-        </label><br>
+            <div id="dateError" class="error-message"></div>
+
+        </div>
+
+        <!-- RIGHT COLUMN: Hidden factors -->
+        <div id="hiddenPanel" class="hidden-panel">
+            <h3>Advanced Factors</h3>
+
+            <label>Fuel Reserve (hours)
+                <input type="number" id="fuelReserve" step="0.1">
+            </label><br>
+
+            <label>Refuel Stop Time (minutes)
+                <input type="number" id="refuelTime" step="0.1">
+            </label><br>
+
+            <label>Reimbursement Fuel Cost ($/gal)
+                <input type="number" id="reimbursementFuelCost" step="0.01">
+            </label><br>
+        </div>
     </div>
-
 </div>
+<!-- Daily minimums output display -->
+<div id="dailyMinimumContainer"></div>
 
 <!-- Results Table -->
 <div id="results"></div>
@@ -225,11 +255,16 @@ document.getElementById("toggleHidden").addEventListener("change", function () {
     const panel = document.getElementById("hiddenPanel");
     panel.style.display = this.checked ? "block" : "none";
 });
+document.getElementById("multiDayToggle").addEventListener("change", function () {
+    const panel = document.getElementById("multiDayPanel");
+    panel.style.display = this.checked ? "block" : "none";
+});
 </script>
 <!-- Load calculation script -->
 <script src="aircraftTripCalculator.js"></script>
 <script>
     function runEstimator() {
+
         const inputs = {
             distance_nm: Number(document.getElementById("distance").value),
             pax_weight: Number(document.getElementById("paxWeight").value),
@@ -242,15 +277,113 @@ document.getElementById("toggleHidden").addEventListener("change", function () {
             reimbursement_fuel_cost: Number(document.getElementById("reimbursementFuelCost").value)
         };
 
-    trip_cost_estimates = applyEstimator(inputs, 
-        AIRCRAFT_DATA,
-        calculationFactors);
+        if (!validateInputs(inputs)) return; // Stop if validation fails
+        const isMulti = document.getElementById("multiDayToggle").checked;
+        let dailyMinimums = null;
+        if (isMulti) {
+            dailyMinimums = computeDailyMinimums(
+                document.getElementById("reservationStart").value,
+                document.getElementById("reservationEnd").value
+            );
+        }
+        inputs.daily_minimums = dailyMinimums; // add to inputs for use in estimator
 
-    renderResults(trip_cost_estimates, 
-        document.getElementById("results"), 
-        "resultsTable");
-    applyColorMap("resultsTable");
-}
+        trip_cost_estimates = applyEstimator(inputs, 
+            AIRCRAFT_DATA,
+            calculationFactors);
+
+        if (isMulti) {
+            renderDailyMinimumTable(dailyMinimums);
+        } else {
+            document.getElementById("dailyMinimumContainer").innerHTML = "";
+        }
+        renderResults(trip_cost_estimates, 
+            document.getElementById("results"), 
+            "resultsTable");
+        applyColorMap("resultsTable");
+    }
+    function validateInputs(inputs) {
+        validationResult = true;
+        validationResult &&= validateMultiDay();
+        return validationResult;
+    }
+    function validateMultiDay() {
+        const isMulti = document.getElementById("multiDayToggle").checked;
+        if (!isMulti) return true; // no validation needed
+
+        const startInput = document.getElementById("reservationStart").value;
+        const endInput   = document.getElementById("reservationEnd").value;
+
+        // Required fields
+        if (!startInput || !endInput) {
+            dateError.textContent = "Please enter both start and end dates for a multi-day reservation.";
+            return false;
+        }
+
+        const start = new Date(startInput);
+        const end   = new Date(endInput);
+
+        // Today at midnight
+        const today = new Date();
+        today.setHours(0,0,0,0);
+
+        // Start cannot be in the past
+        if (start < today) {
+            dateError.textContent = "Start date cannot be in the past.";
+            return false;
+        }
+
+        // Start must be before end
+        if (start > end) {
+            dateError.textContent = "Start date must be before the end date.";
+            return false;
+        }
+        // clear date error if validation passes
+        dateError.textContent = "";
+        return true;
+    }
+    function renderDailyMinimumTable(dailyArray) {
+        const container = document.getElementById("dailyMinimumContainer");
+        container.innerHTML = ""; // clear previous output
+
+        if (!dailyArray || dailyArray.length === 0) return;
+
+        const table = document.createElement("table");
+        table.classList.add("daily-minimum-table");
+
+        // Header row: dates
+        const headerRow = document.createElement("tr");
+        dailyArray.forEach(entry => {
+            const th = document.createElement("th");
+            th.textContent = entry.date.getDate(); // day of month
+            headerRow.appendChild(th);
+        });
+        table.appendChild(headerRow);
+
+        // Daily minimum row
+        const minRow = document.createElement("tr");
+        dailyArray.forEach(entry => {
+            const td = document.createElement("td");
+            td.textContent = entry.hours.toFixed(1);
+            td.classList.add("daily-minimum-cell");
+            minRow.appendChild(td);
+        });
+        table.appendChild(minRow);
+
+        // Summary row
+        const summaryRow = document.createElement("tr");
+        const summaryCell = document.createElement("td");
+        summaryCell.colSpan = dailyArray.length;
+        summaryCell.classList.add("daily-summary-cell");
+
+        const totalHours = dailyArray.reduce((sum, e) => sum + e.hours, 0);
+        summaryCell.textContent = `Total Minimum Hours: ${totalHours.toFixed(1)}`;
+
+        summaryRow.appendChild(summaryCell);
+        table.appendChild(summaryRow);
+
+        container.appendChild(table);
+    }
 </script>
 
 </body>

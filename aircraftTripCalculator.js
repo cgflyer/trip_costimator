@@ -1,4 +1,5 @@
-function computeAircraftResult(ac, inputs, calculationFactors) {
+function computeAircraftResult(ac, inputs, calculationFactors, 
+    minimumHoursCharge) {
     const {
         distance_nm,
         pax_weight,
@@ -65,7 +66,7 @@ function computeAircraftResult(ac, inputs, calculationFactors) {
         time: flightTimeOneWay * multiplier,
         tripTime: tripTimeOneWay * multiplier,
         fuel: fuelOneWay * multiplier,
-        cost: costOneWay * multiplier,
+        cost: Math.max(costOneWay * multiplier, costHr * minimumHoursCharge),
         fuelStops: (legsOneWay - 1) * multiplier,
         fuelDelta: totalDelta,
         maxUsableFuel,
@@ -75,7 +76,12 @@ function computeAircraftResult(ac, inputs, calculationFactors) {
 }
 
 function applyEstimator(inputs, aircraft_data, calculationFactors) {
-    const results = aircraft_data.map(ac => computeAircraftResult(ac, inputs, calculationFactors));
+    let minimumHoursCharge = 0;
+    if (inputs.daily_minimums) {
+        minimumHoursCharge = inputs.daily_minimums.reduce((sum, day) => sum + day.hours, 0);
+    }      
+    const results = aircraft_data.map(ac => computeAircraftResult(ac, inputs, 
+        calculationFactors, minimumHoursCharge));
     return results;
 }
 
@@ -184,4 +190,24 @@ function applyColorMap(tableId) {
         timeCell.style.backgroundColor = softRedYellowGreen(tNorm);
         costCell.style.backgroundColor = softRedYellowGreen(cNorm);
     });
+}
+
+// Example function to compute daily minimums based on reservation dates
+function computeDailyMinimums(startDate, endDate) {
+    const dailyMinHours = 2; // default daily minimum hours
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    const days = [];
+    let d = new Date(start);
+
+    while (d <= end) {
+        days.push({
+            date: new Date(d),
+            hours: dailyMinHours
+        });
+        d.setDate(d.getDate() + 1);
+    }
+
+    return days;
 }
