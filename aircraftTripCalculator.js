@@ -79,9 +79,10 @@ function applyEstimator(inputs, aircraft_data, calculationFactors) {
     return results;
 }
 
-function renderResults(results, outputElement) {
+function renderResults(results, outputElement, tableId) {
     let html = `
-        <table>
+        <table id="${tableId}">
+            <thead>
             <tr>
                 <th>Aircraft</th>
                 <th>Total Travel Time (hrs)</th>
@@ -91,22 +92,96 @@ function renderResults(results, outputElement) {
                 <th>Fuel Stops</th>
                 <th>Extra Fueling Cost / Savings ($)</th>
             </tr>
+            </thead>
+            <tbody>
     `;
 
     results.forEach(r => {
         html += `
             <tr>
                 <td>${r.id}</td>
-                <td>${r.tripTime.toFixed(1)}</td>
+                <td class="trip-time">${r.tripTime.toFixed(1)}</td>
                 <td>${r.time.toFixed(1)}</td>
                 <td>${r.fuel.toFixed(1)}</td>
-                <td>$${r.cost.toFixed(0)}</td>
+                <td class="rental-cost">$${r.cost.toFixed(0)}</td>
                 <td>${r.fuelStops}</td>
                 <td>$${r.fuelDelta.toFixed(0)}</td>
             </tr>
         `;
     });
 
-    html += "</table>";
+    html += "</tbody></table>";
     outputElement.innerHTML = html;
+}
+
+function normalize(value, min, max) {
+    return (value - min) / (max - min);
+}
+
+function redYellowGreen(t) {
+    // t = 0 → red, 0.5 → yellow, 1 → green
+    let r, g, b = 64;
+
+    if (t <= 0.5) {
+        // red → yellow
+        r = 255;
+        g = Math.round((510 - 128) * t + 64);   // 0 → 255
+    } else {
+        // yellow → green
+        g = 255;
+        r = Math.round((510 - 128) * (1 - t) + 64); // 255 → 0
+    }
+
+    return `rgb(${r}, ${g}, ${b})`;
+}
+function softRedYellowGreen(t) {
+    // ease the curve slightly
+    t = Math.pow(t, 0.7);
+
+    const softRed    = [245,  90,  90];
+    const softYellow = [245, 220, 120];
+    const softGreen  = [ 90, 190,  90];
+
+
+    let r, g, b;
+
+    if (t <= 0.5) {
+        // red → yellow
+        const k = t / 0.5;
+        r = softRed[0]   + (softYellow[0] - softRed[0]) * k;
+        g = softRed[1]   + (softYellow[1] - softRed[1]) * k;
+        b = softRed[2]   + (softYellow[2] - softRed[2]) * k;
+    } else {
+        // yellow → green
+        const k = (t - 0.5) / 0.5;
+        r = softYellow[0] + (softGreen[0] - softYellow[0]) * k;
+        g = softYellow[1] + (softGreen[1] - softYellow[1]) * k;
+        b = softYellow[2] + (softGreen[2] - softYellow[2]) * k;
+    }
+
+    return `rgb(${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)})`;
+}
+function applyColorMap(tableId) {
+    const rows = [...document.querySelectorAll(`#${tableId} tbody tr`)];
+
+    const times = rows.map(r => parseFloat(r.querySelector(".trip-time").textContent));
+    const costs = rows.map(r => {
+        const cell = r.querySelector(".rental-cost");
+        return parseFloat(cell.textContent.replace("$", ""));
+    });
+    const minTime = Math.min(...times);
+    const maxTime = Math.max(...times);
+    const minCost = Math.min(...costs);
+    const maxCost = Math.max(...costs);
+
+    rows.forEach((row, i) => {
+        const timeCell = row.querySelector(".trip-time");
+        const costCell = row.querySelector(".rental-cost");
+
+        const tNorm = 1 - normalize(times[i], minTime, maxTime);
+        const cNorm = 1 - normalize(costs[i], minCost, maxCost);
+
+        timeCell.style.backgroundColor = softRedYellowGreen(tNorm);
+        costCell.style.backgroundColor = softRedYellowGreen(cNorm);
+    });
 }

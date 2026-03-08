@@ -35,9 +35,9 @@ $aircraft = [
 ],
 [
     "id" => "N6833C",
-    "cruise" => 137 / $conversions["nm_to_miles"],
+    "cruise" => 127 / $conversions["nm_to_miles"],
     "cost_hr" => 135,
-    "fuel_burn" => 9.3,
+    "fuel_burn" => 9,
     "useful_load" => 1015,
     "max_fuel_gal" => 48,
     "startup_fuel_gal" => 1.4
@@ -53,7 +53,7 @@ $aircraft = [
 ],
 [
     "id" => "N733NB",
-    "cruise" => 112,
+    "cruise" => 110,
     "cost_hr" => 159,
     "fuel_burn" => 9,
     "useful_load" => 1067,
@@ -62,7 +62,7 @@ $aircraft = [
 ],
 [
     "id" => "N737TY",
-    "cruise" => 112,
+    "cruise" => 110,
     "cost_hr" => 159,
     "fuel_burn" => 9,
     "useful_load" => 1010,
@@ -71,9 +71,9 @@ $aircraft = [
 ],
 [
     "id" => "N121DB",
-    "cruise" => 134.695,
+    "cruise" => 150 / $conversions["nm_to_miles"],
     "cost_hr" => 175,
-    "fuel_burn" => 9.5,
+    "fuel_burn" => 10,
     "useful_load" => 1038,
     "max_fuel_gal" => 48,
     "startup_fuel_gal" => 1.4
@@ -246,7 +246,10 @@ document.getElementById("toggleHidden").addEventListener("change", function () {
         AIRCRAFT_DATA,
         calculationFactors);
 
-    renderResults(trip_cost_estimates, document.getElementById("results"));
+    renderResults(trip_cost_estimates, 
+        document.getElementById("results"), 
+        "resultsTable");
+    applyColorMap("resultsTable");
 }
 </script>
 
