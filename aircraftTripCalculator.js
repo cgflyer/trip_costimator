@@ -12,9 +12,9 @@ function computeAircraftResult(ac, inputs, calculationFactors,
         reimbursement_fuel_cost
     } = calculationFactors;
 
-    const cruise = ac.cruise;
+    const cruise = ac.currentProfile.tasKts;
     const costHr = ac.cost_hr;
-    const gph = ac.fuel_burn;
+    const gph = ac.currentProfile.fuelFlow;
     const useful = ac.useful_load;
     const maxFuelGal = ac.max_fuel_gal;
     const startupFuelGal = ac.startup_fuel_gal;

@@ -1,4 +1,7 @@
 <?php
+
+//error_reporting(E_ALL);
+//ini_set('display_errors', 1);
 // -------------------------------
 // Static aircraft data
 // -------------------------------
@@ -13,7 +16,7 @@ $hidden_factors = [
 ];
 $aircraft = [
 
-[
+"N9497M" => [
     // performance from POH 175mph 87pph 70% power 24/24 5000ft
     // performance from POH 179mph 85pph 68% power 23/24 7500ft
     "id" => "N9497M",
@@ -24,7 +27,7 @@ $aircraft = [
     "max_fuel_gal" => 89,
     "startup_fuel_gal" => 12 / $conversions["gallon_to_lbs"]
 ],
-[
+"N3QZ" => [
     "id" => "N3QZ",
     "cruise" => 139,
     "cost_hr" => 190,
@@ -33,7 +36,7 @@ $aircraft = [
     "max_fuel_gal" => 78,
     "startup_fuel_gal" => 1.5
 ],
-[
+"N6833C" => [
     "id" => "N6833C",
     "cruise" => 127 / $conversions["nm_to_miles"],
     "cost_hr" => 135,
@@ -42,7 +45,7 @@ $aircraft = [
     "max_fuel_gal" => 48,
     "startup_fuel_gal" => 1.4
 ],
-[
+"N4135W" => [
     "id" => "N4135W",
     "cruise" => 118,
     "cost_hr" => 162,
@@ -51,7 +54,7 @@ $aircraft = [
     "max_fuel_gal" => 48,
     "startup_fuel_gal" => 1.4
 ],
-[
+"N733NB" => [
     "id" => "N733NB",
     "cruise" => 110,
     "cost_hr" => 159,
@@ -60,7 +63,7 @@ $aircraft = [
     "max_fuel_gal" => 40,
     "startup_fuel_gal" => 1.4
 ],
-[
+"N737TY" => [
     "id" => "N737TY",
     "cruise" => 110,
     "cost_hr" => 159,
@@ -69,7 +72,7 @@ $aircraft = [
     "max_fuel_gal" => 40,
     "startup_fuel_gal" => 1.4
 ],
-[
+"N121DB" => [
     "id" => "N121DB",
     "cruise" => 150 / $conversions["nm_to_miles"],
     "cost_hr" => 175,
@@ -79,6 +82,62 @@ $aircraft = [
     "startup_fuel_gal" => 1.4
 ]
 ];
+function loadPerformanceProfiles($csvPath) {
+    $profilesByTail = [];
+
+    if (($handle = fopen($csvPath, "r")) !== false) {
+        $header = fgetcsv($handle); // read header row
+
+        while (($row = fgetcsv($handle)) !== false) {
+            $entry = array_combine($header, $row);
+            $tail  = $entry['plane'];
+
+            if (!isset($profilesByTail[$tail])) {
+                $profilesByTail[$tail] = [];
+            }
+
+            $profilesByTail[$tail][] = [
+                'name'                     => $entry['profile'],
+                'altitude'                 => (int)$entry['altitude'],
+                'brakeHorsepowerPercent'   => (float)$entry['brake_horsepower_percent'],
+                'manifoldPressure'         => $entry['manifold_pressure'],
+                'rpmSetting'               => (int)$entry['rpm_setting'],
+                'fuelFlow'                 => (float)$entry['fuel_flow'],
+                'tasMph'                   => (float)$entry['true_air_speed_mph'],
+                'tasKts'                   => (float)$entry['true_air_speed_kts'],
+                'isDefault'                => ($entry['default'] === "y")
+            ];
+        }
+
+        fclose($handle);
+    }
+
+    return $profilesByTail;
+}
+function attachProfilesToAircraft(&$aircraft, $profilesByTail) {
+    foreach ($aircraft as $tail => &$plane) {
+        $profiles = $profilesByTail[$tail] ?? [];
+
+        $plane['profiles'] = $profiles;
+
+        // pick default or first profile
+        $default = null;
+        foreach ($profiles as $p) {
+            if ($p['isDefault']) {
+                $default = $p;
+                break;
+            }
+        }
+        if ($default === null && count($profiles) > 0) {
+            $default = $profiles[0];
+        }
+
+        $plane['currentProfile'] = $default;
+    }
+}
+// open the aircraft profile data from csv file
+$profileData = loadPerformanceProfiles("aircraft-performance-profiles.csv");
+attachProfilesToAircraft($aircraft, $profileData);
 
 ?>
 <!DOCTYPE html>
@@ -228,7 +287,8 @@ $aircraft = [
      Pass PHP data to JavaScript
 -------------------------------- -->
 <script>
-    const AIRCRAFT_DATA = <?php echo json_encode($aircraft); ?>;
+    <?php $aircraftArray = array_values($aircraft); ?>;
+    const AIRCRAFT_DATA = <?php echo json_encode($aircraftArray); ?>;
     const HIDDEN_FACTORS = <?php echo json_encode($hidden_factors); ?>;
 
 
