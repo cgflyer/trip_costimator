@@ -69,6 +69,7 @@ function computeAircraftResult(ac, inputs, calculationFactors,
         cost: Math.max(costOneWay * multiplier, costHr * minimumHoursCharge),
         fuelStops: (legsOneWay - 1) * multiplier,
         fuelDelta: totalDelta,
+        currentProfile: ac.currentProfile,
         maxUsableFuel,
         legsOneWay,
         refuelingStops
@@ -101,11 +102,17 @@ function renderResults(results, outputElement, tableId) {
             </thead>
             <tbody>
     `;
-
     results.forEach(r => {
+        const profile = r.currentProfile;
+        const tooltip = 
+            `${profile.name}\n` +
+            `TAS: ${profile.tasKts} kts\n` +
+            `RPM: ${profile.rpmSetting}\n` +
+            `Power: ${profile.brakeHorsepowerPercent}%`;
+
         html += `
             <tr>
-                <td>${r.id}</td>
+                <td title="${tooltip}">${r.id}</td>
                 <td class="trip-time">${r.tripTime.toFixed(1)}</td>
                 <td>${r.time.toFixed(1)}</td>
                 <td>${r.fuel.toFixed(1)}</td>
