@@ -13,7 +13,10 @@ function computeAircraftResult(ac, inputs, calculationFactors,
     } = calculationFactors;
 
     const cruise = ac.currentProfile.tasKts;
-    const costHr = ac.cost_hr;
+    const costUnit = 2400; // cost is charged by RPM 2400 basis
+    const tachRate = ac.currentProfile.rpmSetting / costUnit;
+    const salesTax = 1.0825; // 8.25% sales tax
+    const costHr = ac.cost_hr * tachRate * salesTax;
     const gph = ac.currentProfile.fuelFlow;
     const useful = ac.useful_load;
     const maxFuelGal = ac.max_fuel_gal;
@@ -86,22 +89,9 @@ function applyEstimator(inputs, aircraft_data, calculationFactors) {
     return results;
 }
 
-function renderResults(results, outputElement, tableId) {
-    let html = `
-        <table id="${tableId}">
-            <thead>
-            <tr>
-                <th>Aircraft</th>
-                <th>Total Travel Time (hrs)</th>
-                <th>Total Flying Time (hrs)</th>
-                <th>Total Fuel (gal)</th>
-                <th>Total Cost ($)</th>
-                <th>Fuel Stops</th>
-                <th>Extra Fueling Cost / Savings ($)</th>
-            </tr>
-            </thead>
-            <tbody>
-    `;
+function renderResults(results, tbody) {
+    tbody.innerHTML = ""; // Clear previous results
+    let html = "";  
     results.forEach(r => {
         const profile = r.currentProfile;
         const tooltip = 
@@ -109,22 +99,33 @@ function renderResults(results, outputElement, tableId) {
             `TAS: ${profile.tasKts} kts\n` +
             `RPM: ${profile.rpmSetting}\n` +
             `Power: ${profile.brakeHorsepowerPercent}%`;
+        const row = document.createElement("tr");
+        td = document.createElement("td");
+        td.textContent = r.id;
+        td.title = tooltip;
+        row.appendChild(td);
+        td = document.createElement("td");
+        td.textContent = r.tripTime.toFixed(1);
+        td.classList.add("trip-time");
+        row.appendChild(td);
+        td = document.createElement("td");
+        td.textContent = r.time.toFixed(1);
+        row.appendChild(td);
+        td = document.createElement("td");
+        td.textContent = r.fuel.toFixed(1);
+        row.appendChild(td);
+        td = document.createElement("td");
+        td.textContent = `$${r.cost.toFixed(0)}`;
+        td.classList.add("rental-cost");
+        row.appendChild(td);
+        td = document.createElement("td");
+        td.textContent = r.fuelStops;
+        row.appendChild(td);
+        td = document.createElement("td");
+        td.textContent = `$${r.fuelDelta.toFixed(0)}`;
+        row.appendChild(td);
+        tbody.appendChild(row);});
 
-        html += `
-            <tr>
-                <td title="${tooltip}">${r.id}</td>
-                <td class="trip-time">${r.tripTime.toFixed(1)}</td>
-                <td>${r.time.toFixed(1)}</td>
-                <td>${r.fuel.toFixed(1)}</td>
-                <td class="rental-cost">$${r.cost.toFixed(0)}</td>
-                <td>${r.fuelStops}</td>
-                <td>$${r.fuelDelta.toFixed(0)}</td>
-            </tr>
-        `;
-    });
-
-    html += "</tbody></table>";
-    outputElement.innerHTML = html;
 }
 
 function normalize(value, min, max) {

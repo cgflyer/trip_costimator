@@ -145,7 +145,19 @@ attachProfilesToAircraft($aircraft, $profileData);
 <head>
     <meta charset="UTF-8">
     <title>Aircraft Trip Cost Estimator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+    integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65"
+    crossorigin="anonymous"
+    />
 
+    <script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe"
+    crossorigin="anonymous">
+    </script>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; }
         table { border-collapse: collapse; margin-top: 20px; width: 100%; }
@@ -178,110 +190,144 @@ attachProfilesToAircraft($aircraft, $profileData);
 </head>
 
 <body>
-
-<h2>Aircraft Trip Cost Estimator</h2>
-
-    <p> The following calculator is provided as a convenience for quickly
-        comparing the rough costs and times of hypothetical trips. The calculations
-        presented in this tool are not to be used for flight planning. 
-        
-        The calculations in the spreadsheet provide estimates of fuel stops, flight
-        time, and rental cost for the plane in cruise flight assuming no winds.
-
-        Calculations include a 1 hour reserve, time on the ground for refueling, and
-        allow you to calculate the extra fuel cost (or savings) if you need to refuel.
-
-        The numbers here are simply estimates of the approximate costs and time you
-        can expect to
-        spend using the various planes in our fleet. Once you have chosen the plane
-        for your trip, refer to the POH for actual flight planning details for
-        the route, weight and balance, and specific conditions of your trip.
-    </p>
-
-
-
-<!-- -------------------------------
-     User Input Form
--------------------------------- -->
-<div>
-</div>
-
-<div class="form-grid">
-
-    <!-- LEFT COLUMN: Main form -->
-    <div>
-        <h3>Trip Inputs</h3>
-
-        <label>Trip Distance (nm)
-            <input type="number" id="distance">
-        </label><br>
-
-        <label>Passenger and Bag Weight (lbs)
-            <input type="number" id="paxWeight">
-        </label><br>
-
-        <label>Expected Refuel Price ($/gal)
-            <input type="number" id="fuelPrice" step="0.01">
-        </label><br>
-
-        <label>
-            Round Trip?
-            <input id="roundtrip" type="checkbox">
-        </label><br><br>
-        <!-- Multi-day reservation toggle -->
-        <label>
-            <input type="checkbox" id="multiDayToggle">
-            Multi-day reservation
-        </label>
-        <label>
-            <input type="checkbox" id="toggleHidden">
-            Show advanced factors
-        </label>
-
-        <button onclick="runEstimator()">Compute</button>
-
-    </div>
-
-    <div>
-        <!-- Hidden multi-day panel -->
-        <div id="multiDayPanel" class="hidden-panel" style="display:none; margin-top:10px;">
-            <h3>Reservation Dates</h3>
-
-            <label>Start Date
-                <input type="date" id="reservationStart">
-            </label><br>
-
-            <label>End Date
-                <input type="date" id="reservationEnd">
-            </label><br>
-
-            <div id="dateError" class="error-message"></div>
-
-        </div>
-
-        <!-- RIGHT COLUMN: Hidden factors -->
-        <div id="hiddenPanel" class="hidden-panel">
-            <h3>Advanced Factors</h3>
-
-            <label>Fuel Reserve (hours)
-                <input type="number" id="fuelReserve" step="0.1">
-            </label><br>
-
-            <label>Refuel Stop Time (minutes)
-                <input type="number" id="refuelTime" step="0.1">
-            </label><br>
-
-            <label>Reimbursement Fuel Cost ($/gal)
-                <input type="number" id="reimbursementFuelCost" step="0.01">
-            </label><br>
+<div class="container-fluid">
+  <div class="row mb-4">
+    <div class="col-12">
+        <h2>Aircraft Trip Cost Estimator</h2>
+        <div class="container-fluid mb-4">
+            <div class="alert alert-primary" role="alert">
+                <h5 class="mb-2">What This Tool Is Designed To Do</h5>
+                <p class="mb-0">
+                This estimator helps members compare the <strong>relative cost, fuel burn, and estimated flight time</strong> of our club aircraft for a <strong>hypothetical trip</strong>. It uses typical performance profiles and your inputs to provide a <strongside-by-side comparison</strong> of how each airplane might perform under normal conditions.  
+                Its purpose is to support <strong>aircraft selection</strong>—helping you decide which plane is likely the most suitable or economical before you begin detailed planning.
+                </p>
+            </div>
         </div>
     </div>
-</div>
-<!-- Daily minimums output display -->
-<div id="dailyMinimumContainer"></div>
+  </div>
+  <div class="row">
+    <div class="col-12 col-md-4 mb-4">
+        <div class="form-grid">
 
-<!-- Results Table -->
-<div id="results"></div>
+        <!-- LEFT COLUMN: Main form -->
+            <div>
+                <h3>Trip Inputs</h3>
+
+                <label>Trip Distance (nm)
+                    <input type="number" id="distance">
+                </label><br>
+
+                <label>Passenger and Bag Weight (lbs)
+                    <input type="number" id="paxWeight">
+                </label><br>
+
+                <label>Expected Refuel Price ($/gal)
+                    <input type="number" id="fuelPrice" step="0.01">
+                </label><br>
+
+                <label>
+                    Round Trip?
+                    <input id="roundtrip" type="checkbox">
+                </label><br><br>
+                <!-- Multi-day reservation toggle -->
+                <label>
+                    <input type="checkbox" id="multiDayToggle">
+                    Multi-day reservation
+                </label>
+                <label>
+                    <input type="checkbox" id="toggleHidden">
+                    Show advanced factors
+                </label>
+
+                <button onclick="runEstimator()">Compute</button>
+
+            </div>
+
+            <div>
+                <!-- Hidden multi-day panel -->
+                <div id="multiDayPanel" class="hidden-panel" style="display:none; margin-top:10px;">
+                    <h3>Reservation Dates</h3>
+
+                    <label>Start Date
+                        <input type="date" id="reservationStart">
+                    </label><br>
+
+                    <label>End Date
+                        <input type="date" id="reservationEnd">
+                    </label><br>
+
+                    <div id="dateError" class="error-message"></div>
+
+                </div>
+
+                <!-- RIGHT COLUMN: Hidden factors -->
+                <div id="hiddenPanel" class="hidden-panel">
+                    <h3>Advanced Factors</h3>
+
+                    <label>Fuel Reserve (hours)
+                        <input type="number" id="fuelReserve" step="0.1">
+                    </label><br>
+
+                    <label>Refuel Stop Time (minutes)
+                        <input type="number" id="refuelTime" step="0.1">
+                    </label><br>
+
+                    <label>Reimbursement Fuel Cost ($/gal)
+                        <input type="number" id="reimbursementFuelCost" step="0.01">
+                    </label><br>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-12 col-lg-8">
+      <div class="table-responsive">
+        <!-- your existing results table -->
+      </div>
+    </div>
+  </div>
+  <div class="row mb-4">
+    <!-- Daily minimums table will be rendered here -->
+    <div class="col-12" id="dailyMinimumContainer"></div>
+  </div>
+  <div class="row">
+    <div class="col-12">
+            <!-- Results table will be rendered here -->
+        <div class="table-responsive mb-4">
+            <table id="resultsTable" class="table table-striped table-sm">
+                <thead>
+                    <tr>
+                        <th>Aircraft</th>
+                        <th>Total Travel Time (hrs)</th>
+                        <th>Total Flying Time (hrs)</th>
+                        <th>Total Fuel (gal)</th>
+                        <th>Total Cost ($)</th>
+                        <th>Fuel Stops</th>
+                        <th>Extra Fueling Cost / Savings ($)</th>
+                    </tr>
+                </thead>
+                <tbody id="resultsBody">
+                <!-- JS populates rows here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+  </div>
+  <div class="container-fluid mt-4">
+    <div class="alert alert-warning" role="alert">
+        <h5 class="mb-2">Important Limitations and Pilot Responsibilities</h5>
+        <p>
+        The values shown here are <strong>approximations</strong>. They do not account for real-world variables such as weather, winds aloft, aircraft loading, runway conditions, density altitude, fuel availability, or operational limitations.  
+        This estimator is <strong>not a substitute</strong> for proper flight planning, performance calculations, or regulatory compliance.
+        </p>
+        <p class="mb-0">
+        After selecting an aircraft, each pilot must complete <strong>full, accurate flight planning</strong> using current charts, weather briefings, NOTAMs, weight and balance, performance data, and all applicable regulations and club procedures.  
+        Pilots remain responsible for ensuring the aircraft is suitable for the actual conditions of the flight.
+        </p>
+    </div>
+  </div>
+</div>
+
+
 
 <!-- -------------------------------
      Pass PHP data to JavaScript
@@ -358,8 +404,7 @@ document.getElementById("multiDayToggle").addEventListener("change", function ()
             document.getElementById("dailyMinimumContainer").innerHTML = "";
         }
         renderResults(trip_cost_estimates, 
-            document.getElementById("results"), 
-            "resultsTable");
+            document.getElementById("resultsBody"));
         applyColorMap("resultsTable");
     }
     function validateInputs(inputs) {
