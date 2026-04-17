@@ -83,9 +83,11 @@ function applyEstimator(inputs, aircraft_data, calculationFactors) {
     let minimumHoursCharge = 0;
     if (inputs.daily_minimums) {
         minimumHoursCharge = inputs.daily_minimums.reduce((sum, day) => sum + day.hours, 0);
-    }      
-    const results = aircraft_data.map(ac => computeAircraftResult(ac, inputs, 
-        calculationFactors, minimumHoursCharge));
+    }
+    const results = aircraft_data
+        .filter(ac => ac.hide === false)
+        .map(ac => computeAircraftResult(ac, inputs, 
+            calculationFactors, minimumHoursCharge));      
     return results;
 }
 
@@ -199,11 +201,16 @@ function applyColorMap(tableId) {
         costCell.style.backgroundColor = softRedYellowGreen(cNorm);
     });
 }
+function parseLocalDate(dateStr) {
+  const [year, month, day] = dateStr.split("-").map(Number);
+  return new Date(year, month - 1, day); // Local midnight
+}
+
 
 // Example function to compute daily minimums based on reservation dates
 function computeDailyMinimums(startDate, endDate) {
-    const start = new Date(startDate);
-    const end = new Date(endDate);
+    const start = parseLocalDate(startDate);
+    const end = parseLocalDate(endDate);
 
     const days = [];
     let d = new Date(start);
@@ -236,6 +243,6 @@ function computeDailyMinimums(startDate, endDate) {
 
         d.setDate(d.getDate() + 1);
     }
-
+    console.log("Daily minimums summary: first day:", days[0], "last day:", days[days.length - 1], "total days:", days.length);
     return days;
 }

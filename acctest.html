@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aircraft Trip Costimator</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous">
+</head>
+<body>
+<div class="container-fluid mb-4">
+  <div class="accordion" id="estimatorExplanation">
+
+    <div class="accordion-item">
+      <h2 class="accordion-header" id="headingOutputs">
+        <button class="accordion-button collapsed" 
+                type="button" 
+                data-bs-toggle="collapse" 
+                data-bs-target="#collapseOutputs" 
+                aria-expanded="false" 
+                aria-controls="collapseOutputs">
+          Explanation of Outputs and Cost Factors
+        </button>
+      </h2>
+
+      <div id="collapseOutputs" 
+           class="accordion-collapse collapse" 
+           aria-labelledby="headingOutputs" 
+           data-bs-parent="#estimatorExplanation">
+
+        <div class="accordion-body">
+
+          <h6 class="mt-2">Total Travel Time</h6>
+          <p>Estimated door-to-door time based on typical cruise TAS, trip distance, and any fuel-stop time.</p>
+
+          <h6 class="mt-2">Total Flight Time</h6>
+          <p>Estimated flying time based on typical cruise TAS and trip distance - assuming no-winds and no delays.</p>
+
+          <h6>Total Fuel Burn</h6>
+          <p>Estimated fuel required using the profile's burn rate multiplied by the calculated flight time with taxi and takeoff fuel added.</p>
+
+          <h6>Total Cost</h6>
+          <p>Approximate member cost including hourly rate, estimated tach hours, daily minimums, and sales tax.</p>
+
+          <h6>Daily Minimum Impact</h6>
+          <p>For multi-day trips, the tool applies the aircraft's daily minimum if it exceeds the calculated flight time.</p>
+
+          <h6>Refueling stops</h6>
+          <p>Passenger and baggage weight and fuel capacity with reserves may require a fuel stop for long distance.<p>
+
+          <h6>Fuel adjustments</h6>
+          <p>If you expect a refueling price on the trip, the cost difference from base reimbursement rate may add or subtract from total cost.</p>>
+
+          <h6>How Cost Factors Are Applied</h6>
+          <ul>
+            <li><strong>Hourly rate</strong> — multiplied by estimated or minimum time.</li>
+            <li><strong>Hourly cost - influenced by profile RPM setting vs standard 2400 RPM</strong></li>
+            <li><strong>Fuel burn x fuel price</strong> — adjusted for club reimbursement or surcharge policy.</li>
+            <li><strong>Daily minimums</strong> — applied when the aircraft is away overnight.</li>
+          </ul>
+
+          <h6>Purpose of These Outputs</h6>
+          <p>These values show the <strong>relative differences</strong> between aircraft so members can choose the most suitable airplane before detailed planning.</p>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" integrity="sha384-kenU1KFdBIe4zVF0s0G1M5b4hcpxyD9F7jL+jjXkk+Q2h455rYXK/7HAuoJl+0I4" crossorigin="anonymous"></script>
+</body>
+</html>

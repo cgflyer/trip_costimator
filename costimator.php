@@ -11,8 +11,8 @@ $conversions = [
 ];
 $hidden_factors = [
     "reserve_fuel_hours" => 1,
-    "refueling_stop_time" => 0.5,
-    "reimbursement_fuel_cost" => 5.50
+    "refueling_stop_time" => 0.9,
+    "reimbursement_fuel_cost" => 6.25
 ];
 $aircraft = [
 
@@ -25,62 +25,69 @@ $aircraft = [
     "fuel_burn" => 87 / $conversions["gallon_to_lbs"],
     "useful_load" => 1442,
     "max_fuel_gal" => 89,
-    "startup_fuel_gal" => 12 / $conversions["gallon_to_lbs"]
+    "startup_fuel_gal" => 12 / $conversions["gallon_to_lbs"],
+    "hide" => false
 ],
 "N3QZ" => [
     "id" => "N3QZ",
     "cruise" => 139,
-    "cost_hr" => 190,
+    "cost_hr" => 200,
     "fuel_burn" => 13.2,
     "useful_load" => 1210,
     "max_fuel_gal" => 78,
-    "startup_fuel_gal" => 1.5
+    "startup_fuel_gal" => 1.5,
+    "hide" => false
 ],
 "N6833C" => [
     "id" => "N6833C",
     "cruise" => 127 / $conversions["nm_to_miles"],
-    "cost_hr" => 135,
+    "cost_hr" => 142,
     "fuel_burn" => 9,
     "useful_load" => 1015,
     "max_fuel_gal" => 48,
-    "startup_fuel_gal" => 1.4
+    "startup_fuel_gal" => 1.4,
+    "hide" => false
 ],
 "N4135W" => [
     "id" => "N4135W",
     "cruise" => 118,
-    "cost_hr" => 162,
+    "cost_hr" => 172,
     "fuel_burn" => 9.5,
     "useful_load" => 734,
     "max_fuel_gal" => 48,
-    "startup_fuel_gal" => 1.4
+    "startup_fuel_gal" => 1.4,
+    "hide" => false
 ],
 "N733NB" => [
     "id" => "N733NB",
     "cruise" => 110,
-    "cost_hr" => 159,
+    "cost_hr" => 169,
     "fuel_burn" => 9,
     "useful_load" => 1067,
     "max_fuel_gal" => 40,
-    "startup_fuel_gal" => 1.4
+    "startup_fuel_gal" => 1.4,
+    "hide" => true
 ],
 "N737TY" => [
     "id" => "N737TY",
     "cruise" => 110,
-    "cost_hr" => 159,
+    "cost_hr" => 169,
     "fuel_burn" => 9,
     "useful_load" => 1010,
     "max_fuel_gal" => 40,
-    "startup_fuel_gal" => 1.4
+    "startup_fuel_gal" => 1.4,
+    "hide" => true
 ],
 "N121DB" => [
     "id" => "N121DB",
     "cruise" => 150 / $conversions["nm_to_miles"],
-    "cost_hr" => 175,
+    "cost_hr" => 185,
     "fuel_burn" => 10,
     "useful_load" => 1038,
     "max_fuel_gal" => 48,
-    "startup_fuel_gal" => 1.4
-]
+    "startup_fuel_gal" => 1.4,
+    "hide" => true
+  ]
 ];
 function loadPerformanceProfiles($csvPath) {
     $profilesByTail = [];
