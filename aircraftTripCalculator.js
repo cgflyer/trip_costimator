@@ -9,7 +9,15 @@ function computeAircraftResult(ac, inputs, calculationFactors,
     const {
         fuel_reserve_hours, 
         refuel_stop_time,
-        reimbursement_fuel_cost
+        reimbursement_fuel_cost,
+        ground_time_min,
+        ground_tach_factor,
+        climb_time_min,
+        climb_speed_factor, 
+        climb_tach_factor,
+        approach_time_min,
+        approach_tach_factor,
+        approach_speed_factor
     } = calculationFactors;
 
     const cruise = ac.currentProfile.tasKts;
@@ -21,6 +29,10 @@ function computeAircraftResult(ac, inputs, calculationFactors,
     const useful = ac.useful_load;
     const maxFuelGal = ac.max_fuel_gal;
     const startupFuelGal = ac.startup_fuel_gal;
+
+    const groundTimeHr = ground_time_min / 60;
+    const climbTimeHr = climb_time_min / 60;
+    const approachTimeHr = approach_time_min / 60;
 
     // 1. Flight time (one way)
     const flightTimeOneWay = distance_nm / cruise;
@@ -79,7 +91,28 @@ function computeAircraftResult(ac, inputs, calculationFactors,
     };
 }
 
-function applyEstimator(inputs, aircraft_data, calculationFactors) {
+/* estimator state is used to preserve the basic state
+ used to compute a displayed aircraft result so we can
+ recompute if the profile is changed */
+const estimatorState = {
+        inputs: null,
+        calculationFactors: null,
+        aircraftData: null,
+        aircraftDataIndex: null
+};
+
+function applyEstimatorOnAllAircraft(inputs, aircraft_data, calculationFactors) {
+    /* save the state factors used to compute our table */
+    estimatorState.inputs = inputs;
+    estimatorState.calculationFactors = calculationFactors;
+    estimatorState.aircraftData = aircraft_data;  
+    // AIRCRAFT_DATA is the numeric array from PHP
+    estimatorState.aircraftDataIndex = {};
+
+    aircraft_data.forEach(ac => {
+        estimatorState.aircraftDataIndex[ac.id] = ac;
+    });
+
     let minimumHoursCharge = 0;
     if (inputs.daily_minimums) {
         minimumHoursCharge = inputs.daily_minimums.reduce((sum, day) => sum + day.hours, 0);
@@ -90,11 +123,131 @@ function applyEstimator(inputs, aircraft_data, calculationFactors) {
             calculationFactors, minimumHoursCharge));      
     return results;
 }
+function onProfileChange(event) {
+    const tail = event.target.dataset.tail;
+    const selectedProfile = event.target.value;
+
+    const aircraft = estimatorState.aircraftDataIndex[tail];
+    aircraft.currentProfile = aircraft.profiles.find(p => p.name === selectedProfile);
+
+    let minimumHoursCharge = 0;
+    if (estimatorState.inputs.daily_minimums) {
+        minimumHoursCharge = estimatorState.inputs.daily_minimums.reduce((sum, day) => sum + day.hours, 0);
+    }
+
+    const result = computeAircraftResult(
+        aircraft,
+        estimatorState.inputs,
+        estimatorState.calculationFactors,
+        minimumHoursCharge
+    );
+
+    updateRow(tail, result);
+}
+
+const CL_TAIL = "tail";
+const CL_PROFILE_SELECTOR = "profile-selector";
+const CL_TRIP_TIME = "trip-time";
+const CL_TIME = "time";
+const CL_FUEL = "fuel";
+const CL_COST = "rental-cost";
+const CL_FUEL_STOPS = "fuel-stops";
+const CL_FUEL_DELTA = "fuel-delta";
+
+function showProfileInfo(ac) {
+    // Remove any existing popup
+    const old = document.querySelector(".profile-popup");
+    if (old) old.remove();
+
+    const div = document.createElement("div");
+    div.classList.add("profile-popup");
+
+    div.innerHTML = `
+        <strong>${ac.currentProfile.name}</strong><br>
+        TAS: ${ac.currentProfile.tasKts} kt<br>
+        RPM: ${ac.currentProfile.rpmSetting}<br>
+        Power: ${ac.currentProfile.brakeHorsepowerPercent}%<br>
+        Fuel Flow: ${ac.currentProfile.fuelFlow} gph
+    `;
+
+    document.body.appendChild(div);
+
+    // Auto-position near bottom center
+    div.style.left = "50%";
+    div.style.top = "20%";
+    div.style.transform = "translateX(-50%)";
+
+    // Close on tap
+    div.addEventListener("click", () => div.remove());
+
+    // Auto-close after 6 seconds
+    setTimeout(() => div.remove(), 6000);
+}
+
+
+function updateRow(tail, result) {
+    console.log("Updating row for tail:", tail, "with profile:", result.currentProfile.name);
+    const row = document.querySelector(`tr[data-tail="${tail}"]`);
+    if (!row) return;
+    const profile = result.currentProfile;
+    const tooltip = 
+        `${profile.name}\n` +
+        `TAS: ${profile.tasKts} kts\n` +
+        `RPM: ${profile.rpmSetting}\n` +
+        `Power: ${profile.brakeHorsepowerPercent}%`;
+    //row.querySelector(`.${CL_PROFILE_SELECTOR}`).title = tooltip;
+    row.querySelector(`.${CL_TRIP_TIME}`).textContent = result.tripTime.toFixed(1);
+    row.querySelector(`.${CL_TIME}`).textContent = result.time.toFixed(1);
+    row.querySelector(`.${CL_FUEL}`).textContent = result.fuel.toFixed(1);
+    row.querySelector(`.${CL_COST}`).textContent = `$${result.cost.toFixed(0)}`;
+    row.querySelector(`.${CL_FUEL_STOPS}`).textContent = result.fuelStops;
+    row.querySelector(`.${CL_FUEL_DELTA}`).textContent = `$${result.fuelDelta.toFixed(0)}`;
+}
+
+function buildTailNumberCell(ac) {
+    const td = document.createElement("td");
+    td.classList.add("tail-cell");
+
+    // Tail number text
+    const tailSpan = document.createElement("span");
+    tailSpan.classList.add("tail-text");
+    tailSpan.textContent = ac.id;
+
+    // Dropdown
+    const select = document.createElement("select");
+    select.classList.add("profile-selector");
+    select.dataset.tail = ac.id;
+    select.addEventListener("change", onProfileChange);
+
+    ac.profiles.forEach(profile => {
+        const opt = document.createElement("option");
+        opt.value = profile.name;
+        opt.textContent = profile.name;
+        if (profile.name === ac.currentProfile.name) opt.selected = true;
+        select.appendChild(opt);
+    });
+
+    // Info icon
+    const info = document.createElement("span");
+    info.classList.add("info-icon");
+    info.textContent = "ℹ️";
+    info.addEventListener("click", () => {
+        showProfileInfo(ac);
+    });
+
+    // Append in order: tail number → dropdown → info icon
+    td.appendChild(tailSpan);
+    td.appendChild(select);
+    td.appendChild(info);
+
+    return td;
+}
 
 function renderResults(results, tbody) {
     tbody.innerHTML = ""; // Clear previous results
     let html = "";  
     results.forEach(r => {
+        console.log("Rendering result for tail:", r.id, "profile:", r.currentProfile.name);
         const profile = r.currentProfile;
         const tooltip = 
             `${profile.name}\n` +
@@ -102,29 +255,32 @@ function renderResults(results, tbody) {
             `RPM: ${profile.rpmSetting}\n` +
             `Power: ${profile.brakeHorsepowerPercent}%`;
         const row = document.createElement("tr");
-        td = document.createElement("td");
-        td.textContent = r.id;
-        td.title = tooltip;
+        row.dataset.tail = r.id;
+        td = buildTailNumberCell(estimatorState.aircraftDataIndex[r.id]);
         row.appendChild(td);
         td = document.createElement("td");
         td.textContent = r.tripTime.toFixed(1);
-        td.classList.add("trip-time");
+        td.classList.add(CL_TRIP_TIME);
         row.appendChild(td);
         td = document.createElement("td");
         td.textContent = r.time.toFixed(1);
+        td.classList.add(CL_TIME);
         row.appendChild(td);
         td = document.createElement("td");
         td.textContent = r.fuel.toFixed(1);
+        td.classList.add(CL_FUEL);
         row.appendChild(td);
         td = document.createElement("td");
         td.textContent = `$${r.cost.toFixed(0)}`;
-        td.classList.add("rental-cost");
+        td.classList.add(CL_COST);
         row.appendChild(td);
         td = document.createElement("td");
         td.textContent = r.fuelStops;
+        td.classList.add(CL_FUEL_STOPS);
         row.appendChild(td);
         td = document.createElement("td");
         td.textContent = `$${r.fuelDelta.toFixed(0)}`;
+        td.classList.add(CL_FUEL_DELTA);
         row.appendChild(td);
         tbody.appendChild(row);});
 

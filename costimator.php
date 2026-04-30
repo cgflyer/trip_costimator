@@ -12,7 +12,15 @@ $conversions = [
 $hidden_factors = [
     "reserve_fuel_hours" => 1,
     "refueling_stop_time" => 0.9,
-    "reimbursement_fuel_cost" => 6.25
+    "reimbursement_fuel_cost" => 6.25,
+    "ground_time_min" => 12, // typical time spent taxiing and runup at low rpm
+    "ground_tach_factor" => 0.50, // tach runs at ~50% at 1200 RPM
+    "climb_time_min" => 10, // time spent climbing
+    "climb_speed_factor" => 0.80, // climb is typically 20% slower than cruise
+    "climb_tach_factor" => 1.10 // tach runs ~10% faster at full power
+    "approach_time_min" => 8, // time spent in approach and landing
+    "approach_tach_factor" => 0.70 // tach runs ~30% slower at approach power
+    "approach_speed_factor" => 0.75 // approach is typically 25% slower than cruise
 ];
 $aircraft = [
 
@@ -181,6 +189,46 @@ attachProfilesToAircraft($aircraft, $profileData);
             margin-top: 6px;
             font-weight: 500;
         }
+        .info-icon {
+            margin-left: 6px;
+            cursor: pointer;
+            font-size: 1.1em;
+        }
+
+        .profile-popup {
+            position: fixed;
+            background: rgba(0,0,0,0.85);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 0.9em;
+            z-index: 9999;
+            max-width: 240px;
+            text-align: left;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            opacity: 1;
+            transition: opacity 2.5s ease-out;
+        }
+
+        .profile-popup.fade-out {
+            opacity: 0;
+        }
+        .tail-cell {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .tail-text {
+            font-weight: 600;
+            margin-right: 4px;
+        }
+
+        .info-icon {
+            cursor: pointer;
+            font-size: 1.1em;
+        }
+
     </style>
     <link
   href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css"
@@ -249,7 +297,7 @@ attachProfilesToAircraft($aircraft, $profileData);
                 <button id="computeButton" 
                     onclick="runEstimator()"
                     class="btn btn-lg btn-primary fw-bold px-4 py-2">
-                    Compute
+                    ComputeX
                 </button>
 
             </div>
@@ -378,8 +426,9 @@ document.getElementById("multiDayToggle").addEventListener("change", function ()
 });
 </script>
 <!-- Load calculation script -->
-<script src="aircraftTripCalculator.js"></script>
+<script src="aircraftTripCalculator.js?v=<?php echo time(); ?>"></script>
 <script>
+
     function runEstimator() {
 
         const inputs = {
@@ -404,8 +453,7 @@ document.getElementById("multiDayToggle").addEventListener("change", function ()
             );
         }
         inputs.daily_minimums = dailyMinimums; // add to inputs for use in estimator
-
-        trip_cost_estimates = applyEstimator(inputs, 
+        trip_cost_estimates = applyEstimatorOnAllAircraft(inputs, 
             AIRCRAFT_DATA,
             calculationFactors);
 
