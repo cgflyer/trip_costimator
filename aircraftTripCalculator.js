@@ -1,3 +1,41 @@
+
+function computeStopCycle(ac, cruise, flightLegs, factors_dict) {
+    /*
+      compute the time and cost spent during each refueling stop or initial takeoff and landing.
+
+      ac: the aircraft object
+      cruise: the reference cruise speed of aircraft from current profile
+      flightLegs: the number of legs to complete trip
+      factors_dict: a dictionary with constant assumptions
+    */
+    const s = factors_dict;
+
+    const taxiTimeHr  = s.ground_time_min  / 60;
+    const climbHr   = s.climb_time_min   / 60;
+    const approachHr = s.approach_time_min / 60;
+
+    // Hobbs time (real elapsed)
+    // every cycle is taxi out + takeoff and climb + approach and landing + taxi in
+    // taxiTimeHr includes roughly the time taxing out and in
+    const hobbs = (taxiTimeHr + climbHr + approachHr) * flightLegs;
+
+    // Tach time (RPM‑weighted)
+    const tach = (
+        taxiTimeHr  * s.ground_tach_factor +
+        climbHr   * s.climb_tach_factor +
+        approachHr * s.approach_tach_factor) * flightLegs;
+
+    // Climb distance lost
+    const climbSpeed = cruise * s.climb_speed_factor;
+    const climbDistance = climbSpeed * climbHr * flightLegs;
+
+    // Cost
+    const costHr = ac.cost_hr * s.sales_tax;
+    const cost = tach * costHr; // tach already has flightLegs factored in
+
+    return { hobbs, tach, climbDistance, cost };
+}
+
 function computeAircraftResult(ac, inputs, calculationFactors, 
     minimumHoursCharge) {
     const {
@@ -17,13 +55,15 @@ function computeAircraftResult(ac, inputs, calculationFactors,
         climb_tach_factor,
         approach_time_min,
         approach_tach_factor,
-        approach_speed_factor
+        approach_speed_factor,
+        sales_tax
     } = calculationFactors;
 
     const cruise = ac.currentProfile.tasKts;
     const costUnit = 2400; // cost is charged by RPM 2400 basis
+    const routingLossFactor = 0.50; // 50% loss due to routing for fuel stops and climb/approach inefficiency
     const tachRate = ac.currentProfile.rpmSetting / costUnit;
-    const salesTax = 1.0825; // 8.25% sales tax
+    const salesTax = calculationFactors.sales_tax; // 8.25% sales tax
     const costHr = ac.cost_hr * tachRate * salesTax;
     const gph = ac.currentProfile.fuelFlow;
     const useful = ac.useful_load;
@@ -35,7 +75,7 @@ function computeAircraftResult(ac, inputs, calculationFactors,
     const approachTimeHr = approach_time_min / 60;
 
     // 1. Flight time (one way)
-    const flightTimeOneWay = distance_nm / cruise;
+    let flightTimeOneWay = distance_nm / cruise;
 
     // 2. Max usable fuel (gal)
     const maxFuelByWeight = (useful - pax_weight) / 6;
@@ -53,10 +93,22 @@ function computeAircraftResult(ac, inputs, calculationFactors,
     // 6. Fuel burn (one way)
     const fuelOneWay = flightTimeOneWay * gph + legsOneWay * startupFuelGal;
 
-    // 7. Rental cost (one way)
-    const costOneWay = flightTimeOneWay * costHr;
+    // times and costs are affected by number of stops and distance is reduced by climb time
+    const stopTotals = computeStopCycle(ac, cruise, legsOneWay, calculationFactors);
+    // adjust distance for climb distance, but since climb and landing is not a straight line,
+    // discount the efficiency of that distance reduction by 25%
+    const effectiveCruiseDistance = distance_nm - stopTotals.climbDistance * routingLossFactor;
 
-    // 8. Trip time with refueling stops (one way)
+    // compute actual time spent with engine running (at cruise) and during fuel stops
+    flightTimeOneWay = effectiveCruiseDistance / cruise + stopTotals.hobbs;
+
+    // 7. Rental cost (one way) is effective distance and tach rate in cruise plus
+    // the cost we spent taking off and landing or refueling
+    const costOneWay = effectiveCruiseDistance / cruise * costHr + stopTotals.cost;
+
+    const tachHoursOneWay = effectiveCruiseDistance / cruise * tachRate + stopTotals.tach;
+
+    // 8. Trip time with refueling stops (one way) and factoring in comfort breaks for each stop (except last)
     const tripTimeOneWay = flightTimeOneWay + (legsOneWay - 1) * refuel_stop_time;
 
     // 8. Fuel delta (one way)
@@ -80,6 +132,7 @@ function computeAircraftResult(ac, inputs, calculationFactors,
         id: ac.id,
         time: flightTimeOneWay * multiplier,
         tripTime: tripTimeOneWay * multiplier,
+        tachTime: tachHoursOneWay * multiplier,
         fuel: fuelOneWay * multiplier,
         cost: Math.max(costOneWay * multiplier, costHr * minimumHoursCharge),
         fuelStops: (legsOneWay - 1) * multiplier,
@@ -149,6 +202,7 @@ const CL_TAIL = "tail";
 const CL_PROFILE_SELECTOR = "profile-selector";
 const CL_TRIP_TIME = "trip-time";
 const CL_TIME = "time";
+const CL_TACH_TIME = "tach-time";
 const CL_FUEL = "fuel";
 const CL_COST = "rental-cost";
 const CL_FUEL_STOPS = "fuel-stops";
@@ -164,7 +218,7 @@ function showProfileInfo(ac) {
 
     div.innerHTML = `
         <strong>${ac.currentProfile.name}</strong><br>
-        TAS: ${ac.currentProfile.tasKts} kt<br>
+        TAS: ${ac.currentProfile.tasKts} kt (${ac.currentProfile.tasMph} mph)<br>
         RPM: ${ac.currentProfile.rpmSetting}<br>
         Power: ${ac.currentProfile.brakeHorsepowerPercent}%<br>
         Fuel Flow: ${ac.currentProfile.fuelFlow} gph
@@ -198,6 +252,7 @@ function updateRow(tail, result) {
     //row.querySelector(`.${CL_PROFILE_SELECTOR}`).title = tooltip;
     row.querySelector(`.${CL_TRIP_TIME}`).textContent = result.tripTime.toFixed(1);
     row.querySelector(`.${CL_TIME}`).textContent = result.time.toFixed(1);
+    row.querySelector(`.${CL_TACH_TIME}`).textContent = result.tachTime.toFixed(1);
     row.querySelector(`.${CL_FUEL}`).textContent = result.fuel.toFixed(1);
     row.querySelector(`.${CL_COST}`).textContent = `$${result.cost.toFixed(0)}`;
     row.querySelector(`.${CL_FUEL_STOPS}`).textContent = result.fuelStops;
@@ -265,6 +320,10 @@ function renderResults(results, tbody) {
         td = document.createElement("td");
         td.textContent = r.time.toFixed(1);
         td.classList.add(CL_TIME);
+        row.appendChild(td);
+        td = document.createElement("td");
+        td.textContent = r.tachTime.toFixed(1);
+        td.classList.add(CL_TACH_TIME);
         row.appendChild(td);
         td = document.createElement("td");
         td.textContent = r.fuel.toFixed(1);

@@ -13,14 +13,15 @@ $hidden_factors = [
     "reserve_fuel_hours" => 1,
     "refueling_stop_time" => 0.9,
     "reimbursement_fuel_cost" => 6.25,
-    "ground_time_min" => 12, // typical time spent taxiing and runup at low rpm
+    "ground_time_min" => 15, // typical time spent taxiing in/out and runup
     "ground_tach_factor" => 0.50, // tach runs at ~50% at 1200 RPM
     "climb_time_min" => 10, // time spent climbing
     "climb_speed_factor" => 0.80, // climb is typically 20% slower than cruise
-    "climb_tach_factor" => 1.10 // tach runs ~10% faster at full power
+    "climb_tach_factor" => 1.10, // tach runs ~10% faster at full power
     "approach_time_min" => 8, // time spent in approach and landing
-    "approach_tach_factor" => 0.70 // tach runs ~30% slower at approach power
-    "approach_speed_factor" => 0.75 // approach is typically 25% slower than cruise
+    "approach_tach_factor" => 0.70, // tach runs ~30% slower at approach power
+    "approach_speed_factor" => 0.75, // approach is typically 25% slower than cruise
+    "sales_tax" => 1.0825 // 8.25% sales tax
 ];
 $aircraft = [
 
@@ -358,6 +359,7 @@ attachProfilesToAircraft($aircraft, $profileData);
                         <th>Aircraft</th>
                         <th>Total Travel Time (hrs)</th>
                         <th>Total Flying Time (hrs)</th>
+                        <th>Tach Time (hrs)</th>
                         <th>Total Fuel (gal)</th>
                         <th>Total Cost ($)</th>
                         <th>Fuel Stops</th>
@@ -438,6 +440,7 @@ document.getElementById("multiDayToggle").addEventListener("change", function ()
             round_trip: document.getElementById("roundtrip").checked
         };
         const calculationFactors = {
+            ...HIDDEN_FACTORS,
             fuel_reserve_hours: Number(document.getElementById("fuelReserve").value),
             refuel_stop_time: Number(document.getElementById("refuelTime").value) / 60, // convert minutes to hours
             reimbursement_fuel_cost: Number(document.getElementById("reimbursementFuelCost").value)
