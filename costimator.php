@@ -298,7 +298,7 @@ attachProfilesToAircraft($aircraft, $profileData);
                 <button id="computeButton" 
                     onclick="runEstimator()"
                     class="btn btn-lg btn-primary fw-bold px-4 py-2">
-                    ComputeX
+                    Compute
                 </button>
 
             </div>
